@@ -30,7 +30,7 @@ export function BackgroundGradientAnimationDemo() {
   const handleClick = async () => {
     try {
       setLoading(true);
-      const response = await axios.get("http://localhost:8001/health");
+      const response = await axios.get("http://future-self-server.onrender.com/health");
 
       if (response.status === 200) {
         router.push("/chat");

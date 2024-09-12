@@ -55,12 +55,12 @@ function ChatPage() {
     setShowSparkles(false);
 
     try {
-      const validationResponse = await axios.post("http://localhost:8001/validate_dream", {
+      const validationResponse = await axios.post("https://future-self-server.onrender.com/validate_dream", {
         dreams: inputValue,
       });
 
       if (validationResponse.data.content === "valid") {
-        const dreamResponse = await axios.post("http://localhost:8001/dreams", {
+        const dreamResponse = await axios.post("https://future-self-server.onrender.com/dreams", {
           dreams: inputValue,
         });
 
@@ -85,7 +85,7 @@ function ChatPage() {
   const handleGenerateRandom = async () => {
     setIsLoading(true);
     try {
-      const response = await axios.get("http://localhost:8001/random_dream");
+      const response = await axios.get("https://future-self-server.onrender.com/random_dream");
       console.log("Random dream response:", response.data.content);
       setInputValue(response.data.content);
     } catch (error) {

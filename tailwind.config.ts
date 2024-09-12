@@ -56,8 +56,8 @@ module.exports = {
   },
 
   plugins: [
-    // rest of the code
     addVariablesForColors,
+    require('tailwind-scrollbar-hide')
   ],
 };
 

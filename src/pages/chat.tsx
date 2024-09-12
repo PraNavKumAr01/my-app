@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { motion, AnimatePresence } from "framer-motion";
@@ -42,25 +40,36 @@ function ChatPage() {
   const [showInvalidPopup, setShowInvalidPopup] = useState(false);
   const [shakeKey, setShakeKey] = useState(0);
   const [isTextAnimationComplete, setIsTextAnimationComplete] = useState(false);
+  const [wordCount, setWordCount] = useState(0);
+  const [isWordCountExceeded, setIsWordCountExceeded] = useState(false);
+  const maxWords = 200;
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInputValue(e.target.value);
+    const words = e.target.value.trim().split(/\s+/);
+    setWordCount(words.length);
+    setIsWordCountExceeded(words.length > maxWords);
   };
 
   const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
+    if (wordCount > maxWords) {
+      setIsWordCountExceeded(true);
+      return;
+    }
+
     setLoading(true);
     setShowSparkles(false);
 
     try {
-      const validationResponse = await axios.post("https://future-self-server.onrender.com/validate_dream", {
+      const validationResponse = await axios.post("http://localhost:8001/validate_dream", {
         dreams: inputValue,
       });
 
       if (validationResponse.data.content === "valid") {
-        const dreamResponse = await axios.post("https://future-self-server.onrender.com/dreams", {
+        const dreamResponse = await axios.post("http://localhost:8001/dreams", {
           dreams: inputValue,
         });
 
@@ -85,9 +94,12 @@ function ChatPage() {
   const handleGenerateRandom = async () => {
     setIsLoading(true);
     try {
-      const response = await axios.get("https://future-self-server.onrender.com/random_dream");
+      const response = await axios.get("http://localhost:8001/random_dream");
       console.log("Random dream response:", response.data.content);
       setInputValue(response.data.content);
+      const words = response.data.content.trim().split(/\s+/);
+      setWordCount(words.length);
+      setIsWordCountExceeded(words.length > maxWords); // Update exceeded state
     } catch (error) {
       console.error("Error generating random dream:", error);
     } finally {
@@ -143,16 +155,22 @@ function ChatPage() {
                 <h2 className="mb-6 sm:mb-10 text-xl text-center sm:text-5xl text-black dark:text-white z-10">
                   What Are Your Dreams In Life?
                 </h2>
-                <div className="w-full max-w-3xl">
+                <div className="w-full max-w-3xl relative">
                   <PlaceholdersAndVanishInput
                     placeholders={placeholders}
                     onChange={handleChange}
                     onSubmit={onSubmit}
                     value={inputValue}
+                    maxWords={maxWords}
                   />
+                  <div 
+                    className={`absolute bottom-[-1.5rem] right-[2rem] text-sm ${isWordCountExceeded ? 'text-red-500' : 'text-gray-500'} dark:text-gray-400`}
+                  >
+                    {wordCount}/{maxWords} words
+                  </div>
                 </div>
 
-                <div className="mt-8 pointer-events-auto text-center">
+                <div className="mt-12 pointer-events-auto text-center">
                   <Button
                     borderRadius="1.75rem"
                     className="bg-white dark:bg-slate-900 text-black dark:text-white border-neutral-200 dark:border-slate-800 z-20"
@@ -165,9 +183,9 @@ function ChatPage() {
                 </div>
               </div>
             ) : (
-              <div className="mt-[-10%] z-10">
+              <div className="mt-[-10%] z-10 w-full">
                 {dreamReflection && (
-                  <div className="max-w-8xl mx-auto px-8">
+                  <div className="max-w-8xl mx-auto px-8 py-12 h-[calc(100vh-200px)] sm:h-auto overflow-y-auto scrollbar-hide">
                     <TextGenerateEffect 
                       words={dreamReflection}
                       onAnimationComplete={handleTextAnimationComplete}
@@ -207,7 +225,11 @@ function ChatPage() {
                   className="fixed bottom-4 left-0 right-0 flex justify-center z-50"
                 >
                   <div className="bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg flex items-center">
-                    <span className="mr-2">Please enter a valid query</span>
+                    <span className="mr-2">
+                      {wordCount > maxWords
+                        ? `Please limit your input to ${maxWords} words.`
+                        : "Please enter a valid query"}
+                    </span>
                     <button
                       onClick={() => setShowInvalidPopup(false)}
                       className="ml-2 focus:outline-none"

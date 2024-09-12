@@ -9,15 +9,18 @@ export function PlaceholdersAndVanishInput({
   onChange,
   onSubmit,
   value,
+  maxWords = 500,
 }: {
   placeholders: string[];
   onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
   onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
   value: string;
+  maxWords?: number;
 }) {
   const [currentPlaceholder, setCurrentPlaceholder] = useState(0);
   const [textareaHeight, setTextareaHeight] = useState("48px");
   const [animating, setAnimating] = useState(false);
+  const [wordCount, setWordCount] = useState(0);
 
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -151,12 +154,6 @@ export function PlaceholdersAndVanishInput({
     animateFrame(start);
   };
 
-  // const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-  //   if (e.key === "Enter" && !e.shiftKey) {
-  //     e.preventDefault();
-  //   }
-  // };
-
   const vanishAndSubmit = () => {
     setAnimating(true);
     draw();
@@ -172,20 +169,25 @@ export function PlaceholdersAndVanishInput({
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    vanishAndSubmit();
-    onSubmit && onSubmit(e);
+    if (wordCount <= maxWords) {
+      vanishAndSubmit();
+      onSubmit && onSubmit(e);
+    }
   };
 
   const adjustTextareaHeight = () => {
     if (inputRef.current) {
       inputRef.current.style.height = "auto";
-      inputRef.current.style.height = `${inputRef.current.scrollHeight}px`;
-      setTextareaHeight(`${inputRef.current.scrollHeight}px`);
+      const newHeight = Math.min(inputRef.current.scrollHeight, 10 * 24); // Assuming 24px line height
+      inputRef.current.style.height = `${newHeight}px`;
+      setTextareaHeight(`${newHeight}px`);
     }
   };
 
   useEffect(() => {
     adjustTextareaHeight();
+    const words = value.trim().split(/\s+/);
+    setWordCount(words.length);
   }, [value]);
 
   return (
@@ -212,19 +214,18 @@ export function PlaceholdersAndVanishInput({
             }
             adjustTextareaHeight();
           }}
-          //onKeyDown={handleKeyDown}
           ref={inputRef}
           value={value}
           className={cn(
-            "w-full text-sm sm:text-base z-50 border-none dark:text-white bg-transparent text-black rounded-2xl focus:outline-none focus:ring-0 pl-4 sm:pl-10 pr-14 py-3 resize-none overflow-hidden",
+            "w-full text-sm sm:text-base z-50 border-none dark:text-white bg-transparent text-black rounded-2xl focus:outline-none focus:ring-0 pl-4 sm:pl-10 pr-14 py-3 resize-none overflow-auto",
             animating && "text-transparent dark:text-transparent"
           )}
           rows={1}
-          style={{ height: textareaHeight }}
+          style={{ height: textareaHeight, maxHeight: "calc(100vh - 300px)" }}
         />
 
         <button
-          disabled={!value}
+          disabled={!value || wordCount > maxWords}
           type="submit"
           className="absolute right-2 bottom-2 z-50 h-8 w-8 rounded-full disabled:bg-gray-100 bg-black dark:bg-zinc-900 dark:disabled:bg-zinc-800 transition duration-200 flex items-center justify-center"
         >
